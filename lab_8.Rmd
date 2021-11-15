@@ -74,3 +74,81 @@ ggplot(data = homes_sub, aes(x = SqFt, y = Price)) +
   geom_smooth(method = "lm")
 ```
 The outlier could be explained by multiple reasons we don't know: it's a celebrities home, the amount of land it is sitting on, it could be updated, or it could have a high value location (i.e. on the water).
+
+## Model the relationship with homes as price as DV (dependent variable)
+
+```{r}
+homes_lm1 <- lm(Price ~ City + Bedrooms + Bathrooms + SqFt + PricePerSqFt + Status, data = homes_sub)
+# you have multiple things telling you the same thing in this line of code (i.e. PricePerSqFt should be a red flag/ bedrooms and bathrooms are closely related)
+
+# Make a subset that only contains the quantitative variables
+homes_quant <- homes_sub %>% 
+  select(Price:PricePerSqFt) # get a verison of the home_sub that only contains versions of the quantitative variables
+
+homes_cor <- cor(homes_quant)
+homes_cor
+
+corrplot(homes_cor, method = 'ellipse')
+
+# Call homes_lm1 in the console
+# Bedrooms and bathrooms are moderately positively correlated 
+# Reference level is OroGrande (the one that doesn't show up). Foreclosure is the reference status. There are enough variables in here that don't make sense that you should worry about what seems redundant. 
+
+# How would I explore diagnostic plots?
+plot(homes_lm1)
+```
+Try another model (homes_lm2), where we simplify this a bit:
+
+- City
+- SqFt
+- Status
+
+```{r}
+homes_lm2 <- lm(Price ~ City + SqFt + Status, data = homes_sub)
+
+# Call homes_lm2 in the console
+
+plot(homes_lm2)
+
+# Call on 'summary(homes_lm1)' in the console
+# Adjusted R-squared is what you use when you do multiple linear regression because model fit will account for the adding more variables. 
+# Adjusted R- squared = 0.8457. Meaning 84% of variance in home price is explained by the predictor variables in this model. 
+
+```
+Find the AIC value of each model:
+
+```{r}
+AIC(homes_lm1)
+AIC(homes_lm2)
+
+# Lower AIC represent better balance of fit and complexity
+```
+
+Try another permutation of this model that you think might make sense, check out & compare the model fit, outputs and AIC value.
+
+```{r}
+homes_lm3 <- lm(Price ~ SqFt + City + Status + Bedrooms, data = homes_sub)
+
+summary(homes_lm3)
+AIC(homes_lm3)
+
+# Property size (acerage) seems critical to include 
+```
+
+Use 'modelsummary' to show model outputs side-by-side
+
+If you use modelsummary to return model outputs of multiple models, it wants you to feed it to it as a list
+```{r}
+# modelsummary(homes_lm1)
+modelsummary(list(homes_lm1, homes_lm2, homes_lm3))
+```
+
+## Start making predictions with this model
+
+Use 'broom::augment()'
+
+```{r}
+homes_predicted <- augment(homes_lm1)
+```
+
+Use 'predict()' function to try out your model on new scenarios that you create.
